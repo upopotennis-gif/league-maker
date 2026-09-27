@@ -286,6 +286,15 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
 .help details{margin-top:12px;border-top:1px solid var(--line)}
 #helpPanel{margin-top:10px}
 @media print{#sheets{zoom:1!important}nav.bnav{display:none}}
+.videobtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);border:2px solid var(--court);border-radius:12px;padding:12px 14px;color:var(--ink)}
+.videobtn .play{flex:0 0 44px;height:44px;border-radius:50%;background:var(--court);position:relative}
+.videobtn .play::after{content:"";position:absolute;left:17px;top:13px;border-left:15px solid var(--court-ink);border-top:9px solid transparent;border-bottom:9px solid transparent}
+.videobtn b{display:block;font-size:17px}
+.videobtn small{color:var(--muted);font-size:13px}
+.help .videobtn{margin:6px 0 4px}
+.vmodal{position:fixed;inset:0;z-index:40;background:rgba(8,14,11,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.vmodal video{width:100%;max-width:1100px;max-height:80vh;background:#000;border-radius:10px}
+.vmodal button{min-width:160px}
 .toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;font-size:14px;z-index:30;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 
 @media print{
@@ -308,6 +317,7 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
   <div id="gate" class="gate noprint" hidden>
     <h1><span class="court-mark" aria-hidden="true"></span>リーグ対戦表メーカー</h1>
     <p class="lead">ソフトテニスのダブルスのリーグ戦。リーグ分け・対戦表の印刷・結果の入力と順位の計算ができます。</p>
+    <button type="button" class="videobtn" data-video><span class="play" aria-hidden="true"></span><span><b>使い方を動画で見る</b><small>約3分半・音声と字幕つき。はじめての人はここから</small></span></button>
     <form id="openForm" class="panel" style="display:flex;flex-direction:column;gap:10px">
       <label class="f" for="codeInput">大会番号（6けた）</label>
       <div class="codebox">
@@ -466,6 +476,7 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
 <template id="helpTpl">
 <div class="help">
   <h2>使い方</h2>
+  <button type="button" class="videobtn" data-video><span class="play" aria-hidden="true"></span><span><b>使い方を動画で見る</b><small>約3分半・音声と字幕つき。はじめての人はここから</small></span></button>
   <h3>先生 <span>大会を作る人</span></h3>
   <ol class="steps">
     <li><b>大会を作る</b>「新しい大会を作る」で管理番号（4〜8けた）を決めると、6けたの大会番号が出ます。管理番号は毎回同じにしておくと便利です。</li>
@@ -493,6 +504,11 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
   </details>
 </div>
 </template>
+<div class="vmodal noprint" id="vmodal" hidden role="dialog" aria-modal="true" aria-label="使い方の動画">
+  <video id="guideVideo" controls playsinline preload="none" poster="video/poster.jpg"><source src="video/guide.mp4" type="video/mp4"></video>
+  <p style="margin:0;color:#c9d6ce;font-size:13px;text-align:center">スマホは横向きにするか、動画の右下のボタンで全画面にすると大きく見られます。</p>
+  <button type="button" id="vclose">閉じる</button>
+</div>
 <div id="toast" class="toast noprint" hidden></div>
 
 <script type="module">
@@ -914,6 +930,12 @@ $("localBtn").onclick=openLocal;
 $("leaveBtn").onclick=leave;
 $("gateHelp").innerHTML=$("helpTpl").innerHTML;
 $("helpPanel").innerHTML=$("helpTpl").innerHTML;
+function openVideo(){$("vmodal").hidden=false;$("guideVideo").play().catch(()=>{})}
+function closeVideo(){$("guideVideo").pause();$("vmodal").hidden=true}
+document.addEventListener("click",e=>{if(e.target.closest("[data-video]"))openVideo()});
+$("vclose").onclick=closeVideo;
+$("vmodal").onclick=e=>{if(e.target===$("vmodal"))closeVideo()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("vmodal").hidden)closeVideo()});
 $("helpBtn").onclick=()=>{$("helpPanel").hidden=!$("helpPanel").hidden;$("sharePanel").hidden=true};
 
 /* ============================================================

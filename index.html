@@ -37,6 +37,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font:15px/1.6 "BIZ UDPGothic","Hiragino Sans","Yu Gothic",sans-serif;padding-inline:16px;padding-block:0 calc(96px + env(safe-area-inset-bottom,0px))}
 .wrap{max-width:1080px;margin:0 auto}
 h1,h2,h3{text-wrap:balance}
@@ -201,9 +202,9 @@ table.lt .pair .pn{font-size:11pt;white-space:nowrap;overflow:hidden;text-overfl
 table.lt .pair .ps{font-size:9.5pt;white-space:nowrap}
 table.lt td.diag{background:linear-gradient(to bottom right,transparent calc(50% - .8px),#000 calc(50% - .4px),#000 calc(50% + .4px),transparent calc(50% + .8px))}
 table.lt td.skip{background:linear-gradient(to bottom left,transparent calc(50% - .5px),#000 calc(50% - .25px),#000 calc(50% + .25px),transparent calc(50% + .5px)),linear-gradient(to bottom right,transparent calc(50% - .5px),#000 calc(50% - .25px),#000 calc(50% + .25px),transparent calc(50% + .5px))}
-table.lt td.s{font-size:8.5pt;line-height:1.15;font-family:"BIZ UDPGothic",sans-serif}
+table.lt td.s{font-size:8pt;line-height:1.15;font-family:"BIZ UDPGothic",sans-serif;white-space:nowrap;letter-spacing:-.02em;overflow:hidden}
 table.lt td.s .mk{display:block;font-size:10pt}
-table.lt td.v{font-size:9.5pt;font-family:"BIZ UDPGothic",sans-serif}
+table.lt td.v{font-size:9pt;font-family:"BIZ UDPGothic",sans-serif;white-space:nowrap;letter-spacing:-.02em}
 table.lt td.rk{font-size:13pt;font-weight:700;font-family:"BIZ UDPGothic",sans-serif}
 table.lt .res{border-left:3px double #000}
 .sheet .ord{margin-top:5mm;font-size:10pt}

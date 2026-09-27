@@ -442,7 +442,6 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
     <div id="tab-print" hidden>
       <div class="toolbar noprint" style="margin-top:18px">
         <button id="printBtn" class="primary" type="button">印刷する</button>
-        <label><input id="oOverview" type="checkbox"> 1枚目にリーグ分け一覧</label>
         <label><input id="oNames" type="checkbox"> 対戦順序にペア名</label>
         <label><input id="oScores" type="checkbox"> 入力済みの結果も入れる</label>
       </div>
@@ -1167,7 +1166,7 @@ $("deleteBtn").onclick=async()=>{
 };
 
 /* ---------- 印刷 ---------- */
-["Overview","Names","Scores"].forEach(k=>{const el=$("o"+k),key=k.toLowerCase();el.checked=!!prefs[key];el.onchange=()=>{prefs[key]=el.checked;savePrefs();renderSheets()}});
+["Names","Scores"].forEach(k=>{const el=$("o"+k),key=k.toLowerCase();el.checked=!!prefs[key];el.onchange=()=>{prefs[key]=el.checked;savePrefs();renderSheets()}});
 $("printBtn").onclick=()=>window.print();
 function metaHtml(extra){
   const m=S.meta||{},line=[m.title,m.cat].filter(Boolean).join("　");
@@ -1204,7 +1203,7 @@ function overviewSheet(){
 function renderSheets(){
   const el=$("sheets");
   if(!S.leagues||!S.leagues.some(l=>l.ids.length)){el.innerHTML=`<p style="padding:24px;color:var(--muted)">リーグが組まれると、ここに対戦表が出ます。</p>`;return}
-  el.innerHTML=(prefs.overview?overviewSheet():"")+S.leagues.map((lg,li)=>lg.ids.length?sheetFor(lg,li):"").join("");
+  el.innerHTML=S.leagues.map((lg,li)=>lg.ids.length?sheetFor(lg,li):"").join("");
   fitSheets();
 }
 function fitSheets(){const el=$("sheets");const w=el.parentElement.clientWidth-24,z=Math.min(1,w/794);el.style.zoom=z<1?String(z):""}

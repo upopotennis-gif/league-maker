@@ -217,6 +217,22 @@ table.lt .res{border-left:3px double #000}
 .sheet .ord li .mm{display:inline-block;width:3.3em;padding-left:.3em}
 .sheet .ord li .vs{display:inline-block;font-size:9pt;width:60mm;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .sheet .note{font-size:9pt;margin-top:2mm}
+.sheet .ord.many{margin-top:2mm;font-size:8.5pt}
+.sheet .ord.many ol{columns:8;column-gap:3mm}
+.sheet .ord.many li{line-height:1.4}
+.sheet .ord.many li .i{width:2.4em}
+.sheet .ord.many li .mm{width:3.6em}
+table.lt.big thead th{height:7mm;font-size:8pt}
+table.lt.big .num{font-size:8pt}
+table.lt.big .pair{padding:0 1mm}
+table.lt.big .pair .pn{font-size:9pt}
+table.lt.big .pair .ps{font-size:7.5pt}
+table.lt.tiny thead th{font-size:6.5pt;letter-spacing:-.04em}
+table.lt.tiny .pair .pn{font-size:8pt}
+table.lt.tiny .pair .ps{font-size:6.5pt}
+table.lt.tiny td.s .mk{font-size:7.5pt}
+table.lt.tiny td.v{font-size:7pt}
+table.lt.tiny td.rk{font-size:9pt}
 .sheet .foot{margin-top:auto;padding-top:4mm;text-align:right;font-size:9pt}
 .sheet table.ov{border-collapse:collapse;width:100%;font-size:10.5pt}
 .sheet table.ov td{border:1px solid #000;padding:1.2mm 2mm;text-align:left;vertical-align:top}
@@ -413,6 +429,9 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
           <div class="step-h"><b>STEP 3</b><h2>リーグ分け</h2><span>リーグ数を選んで「リーグを組む」</span></div>
           <div class="panel">
             <div id="summary"></div>
+            <div class="seg" style="margin-bottom:8px"><span>分け方：</span>
+              <button type="button" class="chip" id="splitMix">全ペアを混ぜて分ける</button>
+              <button type="button" class="chip" id="splitHalf">各校の上半分・下半分で分ける</button></div>
             <div id="plans" class="plan" role="group" aria-label="リーグ数"></div>
             <div class="opts">
               <div class="seg"><span>同じ学校どうしが同じリーグに入ったとき：</span>
@@ -481,9 +500,9 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
   <ol class="steps">
     <li><b>大会を作る</b>「新しい大会を作る」で管理番号（4〜8けた）を決めると、6けたの大会番号が出ます。管理番号は毎回同じにしておくと便利です。</li>
     <li><b>学校とペアを入れる</b>「リーグ分け」で学校ごとに1行1ペア。上から1番手・2番手の順に入れます。</li>
-    <li><b>リーグを組む</b>リーグ数を選んで「リーグを組む」。同じ学校のペアはできるだけ別のリーグに分かれます。同じリーグに入ったときは、その試合をしない（表に×）か、するかを選べます。</li>
+    <li><b>リーグを組む</b>リーグ数を選んで「リーグを組む」。同じ学校のペアはできるだけ別のリーグに分かれます。同じリーグに入ったときは、その試合をしない（表に×）か、するかを選べます。「各校の上半分・下半分で分ける」を選ぶと、各校の上位のペアで上位リーグ、残りで下位リーグを作ります。1リーグは30ペアまでです。</li>
     <li><b>部員に知らせる</b>画面の上の大会番号を押すとQRコードが出ます。部員に読んでもらいます。</li>
-    <li><b>対戦表を印刷する</b>「印刷」でA4・1リーグ1枚。パソコンから印刷するときれいです。</li>
+    <li><b>対戦表を印刷する</b>「印刷」でA4・1リーグ1枚（試合が多いリーグは対戦順序を2枚目に）。パソコンから印刷するときれいです。</li>
   </ol>
   <h3>部員 <span>結果を入れる人</span></h3>
   <ol class="steps">
@@ -540,6 +559,12 @@ function matchOrder(n){
 
 const COLORS=["#2e6b4c","#c0662b","#3565a8","#9a3b7a","#8a7a1f","#2f8a8a","#6b4fb0","#a8433a"];
 const LNAMES="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// リーグ名（上下に分けたときは「上位」「下位」、各2リーグ以上なら「上位A」…）
+function lname(li){
+  const n=(S&&S.leagues||[]).length;
+  if(S&&S.builtHalf&&n>=2&&n%2===0){const k=n/2,g=li<k?"上位":"下位";return k===1?g:g+LNAMES[li%k]}
+  return LNAMES[li]||String(li+1);
+}
 const LS_LOCAL="league-maker-local-v2", LS_LAST="league-maker-last", LS_RECENT="league-maker-recent", LS_PREFS="league-maker-prefs";
 const firebaseConfig={
   apiKey:'AIzaSyCzxuZbLIhAKYIWGI5Q7vMscumtzwdxF0U',
@@ -626,10 +651,25 @@ function splitCost(leagues,pb,balance){
   }
   return c;
 }
+// 各校の上半分・下半分に分ける（奇数の学校の真ん中のペアは、人数の少ないほうへ）
+function splitHalves(pairs){
+  const g={};pairs.forEach(p=>(g[p.sid]=g[p.sid]||[]).push(p));
+  const up=[],lo=[],mid=[];
+  Object.values(g).forEach(a=>{a.sort((x,y)=>x.tier-y.tier);const h=Math.floor(a.length/2);
+    up.push(...a.slice(0,h));lo.push(...a.slice(a.length-h));if(a.length%2)mid.push(a[h])});
+  mid.forEach(p=>(up.length<=lo.length?up:lo).push(p));
+  return [up,lo];
+}
+const halfMode=d=>d.split==="half";
 function buildLeagues(d,L){
+  if(!halfMode(d))return buildGroup(d,d.pairs,L);
+  const [up,lo]=splitHalves(d.pairs),k=Math.max(1,L/2);
+  return [...buildGroup(d,up,k),...buildGroup(d,lo,k)];
+}
+function buildGroup(d,pairs,L){
   const pb=Object.fromEntries(d.pairs.map(p=>[p.id,p])),balance=d.balance!==false;
   const leagues=[...Array(L)].map(()=>[]);
-  [...d.pairs].sort((a,b)=>a.tier-b.tier||Math.random()-.5).forEach(p=>{
+  [...pairs].sort((a,b)=>a.tier-b.tier||Math.random()-.5).forEach(p=>{
     let best=0,bs=Infinity;
     shuffle([...Array(L).keys()]).forEach(i=>{
       const same=leagues[i].filter(id=>pb[id].sid===p.sid).length;
@@ -692,11 +732,38 @@ function orderStats(out,n,tot){
   });
   return {bad,b2b,g2,cost:bad*100+b2b*10+g2*3};
 }
+// 13ペア以上：1巡ずつ（全員がほぼ1試合ずつ）組む。遅れているペアから相手を決め、遅れているペアの試合を先にする
+function roundPairs(n,edges,tot,rnd){
+  const rest=new Set(edges.map(e=>e.join("-"))),pl=Array(n+1).fill(0),out=[];
+  const has=(a,b)=>rest.has(a<b?a+"-"+b:b+"-"+a);
+  while(rest.size){
+    const vs=[...Array(n).keys()].map(i=>i+1).filter(v=>pl[v]<tot[v]).map(v=>[v,pl[v]*1000-(tot[v]-pl[v])*10+rnd()]).sort((x,y)=>x[1]-y[1]).map(x=>x[0]);
+    // 1巡の組み合わせを何通りか試し、組めるペアが多く・遅れているペアが入るものを選ぶ
+    let round=[],rs=-Infinity;
+    for(let t=0;t<30;t++){
+      const used=new Set(),cand=[];let sc=0;
+      const ord=t?vs.map(v=>[v,pl[v]+rnd()*1.5]).sort((x,y)=>x[1]-y[1]).map(x=>x[0]):vs;
+      ord.forEach(v=>{if(used.has(v))return;let bu=0,bs=Infinity;
+        ord.forEach(u=>{if(u===v||used.has(u)||!has(u,v))return;const s=pl[u]*1000-(tot[u]-pl[u])*10+rnd()*(t?600:5);if(s<bs){bs=s;bu=u}});
+        if(bu){used.add(v);used.add(bu);cand.push([Math.min(v,bu),Math.max(v,bu)]);sc+=1e6-(pl[v]+pl[bu])*1000+(tot[v]-pl[v]+tot[bu]-pl[bu])}});
+      if(sc>rs){rs=sc;round=cand}
+    }
+    round.sort((x,y)=>Math.min(pl[x[0]],pl[x[1]])-Math.min(pl[y[0]],pl[y[1]])||rnd()-.5);
+    const last=out[out.length-1];
+    if(last){const k=round.findIndex(m=>!m.some(x=>last.includes(x))&&Math.min(pl[m[0]],pl[m[1]])===Math.min(pl[round[0][0]],pl[round[0][1]]));if(k>0)round.unshift(round.splice(k,1)[0])}
+    round.forEach(m=>{rest.delete(m.join("-"));pl[m[0]]++;pl[m[1]]++;out.push(m)});
+  }
+  return out;
+}
 function balancedPairs(ids,pb,sig){
   const n=ids.length,edges=[],tot=Array(n+1).fill(0);
   for(let a=1;a<=n;a++)for(let b=a+1;b<=n;b++)if(pb[ids[a-1]].sid!==pb[ids[b-1]].sid){edges.push([a,b]);tot[a]++;tot[b]++}
   const rnd=seedRand(sig);let best=edges,bc=Infinity;
-  for(let r=0;r<200;r++){
+  const big=n>12; // 13ペア以上は時間がかかるので回数をへらし、1巡ずつ組む方式も試す
+  if(big){
+    for(let r=0;r<15;r++){const out=roundPairs(n,edges,tot,rnd),st=orderStats(out,n,tot);if(st.cost<bc){bc=st.cost;best=out}if(!st.cost)return best}
+  }
+  for(let r=0;r<(big?8:200);r++){
     const rest=[...edges],out=[],pl=Array(n+1).fill(0),last=Array(n+1).fill(-9);
     while(rest.length){
       const k=out.length;let bi=0,bs=Infinity;
@@ -713,7 +780,16 @@ function balancedPairs(ids,pb,sig){
       if(ns.cost<=st.cost)st=ns;else [out[i],out[j]]=[out[j],out[i]];
     }
     if(st.cost<bc){bc=st.cost;best=out.map(x=>[...x])}
-    if(r>=10&&st.bad===0&&st.b2b===0)break;
+    if((r>=10||big)&&st.bad===0&&st.b2b===0)break;
+  }
+  if(big&&bc>0){ // いちばん良い順序を入れかえで仕上げる
+    const out=best.map(x=>[...x]);let st=orderStats(out,n,tot);
+    for(let it=0;it<8000&&st.cost>0;it++){
+      const i=Math.floor(rnd()*out.length),j=Math.floor(rnd()*out.length);if(i===j)continue;
+      [out[i],out[j]]=[out[j],out[i]];const ns=orderStats(out,n,tot);
+      if(ns.cost<=st.cost)st=ns;else [out[i],out[j]]=[out[j],out[i]];
+    }
+    if(st.cost<bc)best=out;
   }
   return best;
 }
@@ -980,7 +1056,7 @@ const noLeagues=()=>{const L=S.leagues||[];return !L.length||!L.some(l=>l.ids.le
 const emptyMsg=()=>`<div class="panel" style="margin-top:18px">まだリーグが組まれていません。${isAdmin()?"下の「リーグ分け」で組んでください。":"先生がリーグを組むと、ここに試合が出ます。"}</div>`;
 function renderChips(){
   const L=S.leagues||[];if(prefs.league>=L.length)prefs.league=0;
-  const html=noLeagues()||L.length<2?"":L.map((lg,i)=>{const s=standings(lg);return `<button type="button" data-l="${i}" aria-pressed="${i===prefs.league}">${LNAMES[i]||i+1}リーグ <small>${s.done}/${s.total}</small></button>`}).join("");
+  const html=noLeagues()||L.length<2?"":L.map((lg,i)=>{const s=standings(lg);return `<button type="button" data-l="${i}" aria-pressed="${i===prefs.league}">${lname(i)}リーグ <small>${s.done}/${s.total}</small></button>`}).join("");
   document.querySelectorAll("[data-lchips]").forEach(el=>{el.innerHTML=html;
     el.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{prefs.league=+b.dataset.l;savePrefs();renderAll(false)})});
 }
@@ -990,7 +1066,7 @@ function renderMatches(){
   const left=ms.filter(m=>!getScore(m.ida,m.idb)).length;
   const nextNo=(ms.find(m=>!getScore(m.ida,m.idb))||{}).no;
   const list=prefs.remain?ms.filter(m=>!getScore(m.ida,m.idb)):ms;
-  const name=(S.leagues.length>1?(LNAMES[prefs.league]||prefs.league+1)+"リーグ　":"");
+  const name=(S.leagues.length>1?lname(prefs.league)+"リーグ　":"");
   let t=`<div class="mtools"><span>${name}${left?`残り <b>${left}</b> / ${ms.length}試合`:"全試合終了"}</span><button type="button" class="chip" id="remainBtn" aria-pressed="${!!prefs.remain}">残りだけ</button></div>`;
   t+=`<ol class="matches">`+list.map(m=>{
     const A=PB[m.ida],B=PB[m.idb],s=getScore(m.ida,m.idb),key=skey(m.ida,m.idb);
@@ -1035,7 +1111,7 @@ function renderStandings(){
   if(noLeagues())return $("standBody").innerHTML=emptyMsg();
   const lg=S.leagues[prefs.league],ids=lg.ids,st=standings(lg);
   const order=ids.map((id,i)=>({id,i,r:st.rows[i]})).sort((a,b)=>(a.r.pl?st.rank[a.id]:99)-(b.r.pl?st.rank[b.id]:99)||a.i-b.i);
-  const name=(S.leagues.length>1?(LNAMES[prefs.league]||prefs.league+1)+"リーグ　":"");
+  const name=(S.leagues.length>1?lname(prefs.league)+"リーグ　":"");
   let t=`<p class="rank-state">${name}${st.complete?"全試合終了・順位確定":`${st.done}/${st.total}試合終了（途中経過）`}</p>`;
   t+=`<table class="rank"><thead><tr><th>順位</th><th class="l">ペア</th><th>勝敗</th><th>勝率</th><th>差</th></tr></thead><tbody>`+order.map(o=>{const p=PB[o.id];
     return `<tr><td class="rk${st.complete?"":" tmp"}">${o.r.pl?st.rank[o.id]:"－"}</td><td class="l">${esc(p.name)}<small>${o.i+1}番・${esc(schoolName(p))}</small></td><td>${o.r.pl?`${o.r.w}勝${o.r.l}敗`:""}</td><td>${fmtRate(o.r)}</td><td>${fmtDiff(o.r)}</td></tr>`}).join("")+`</tbody></table>`;
@@ -1074,6 +1150,7 @@ function renderSetup(remote){
   const inSchools=$("schools").contains(document.activeElement);
   if(!(remote&&inSchools))renderSchools();
   $("oBalance").checked=S.balance!==false;
+  $("splitMix").setAttribute("aria-pressed",!halfMode(S));$("splitHalf").setAttribute("aria-pressed",halfMode(S));
   $("skipOn").setAttribute("aria-pressed",skipOn());$("skipOff").setAttribute("aria-pressed",!skipOn());
   document.querySelectorAll("[data-g]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.g===(S.games||7)));
   $("regForm").hidden=mode!=="cloud"||!!lsGet("league-maker-pin-"+code,null);
@@ -1103,22 +1180,34 @@ function renderSchools(){
   });
   $("addSchool").onclick=()=>{const id="s"+(S.nextS||S.schools.length+1);S.schools.push({id,name:"",text:""});commit({schools:S.schools,nextS:(S.nextS||S.schools.length)+1});renderSchools();$("sn_"+id).focus()};
 }
+const MAXP=30; // 1リーグの上限ペア数
 function planOptions(){
   const N=S.pairs.length,cnt={};S.pairs.forEach(p=>cnt[p.sid]=(cnt[p.sid]||0)+1);
   const maxS=Math.max(0,...Object.values(cnt)),nSch=Object.keys(cnt).length,opts=[];
+  if(halfMode(S)){
+    const [up,lo]=splitHalves(S.pairs),gs=[up,lo].map(g=>{const c={};g.forEach(p=>c[p.sid]=(c[p.sid]||0)+1);return {n:g.length,maxS:Math.max(0,...Object.values(c)),nSch:Object.keys(c).length}});
+    for(let k=1;k<=N;k++){
+      const szs=gs.map(g=>sizesFor(g.n,k));if(szs.some(z=>z[z.length-1]<3))break;if(szs.some(z=>z[0]>MAXP))continue;
+      opts.push({L:2*k,k,sz:[...szs[0],...szs[1]],szs,ok:gs.every((g,i)=>k>=g.maxS&&szs[i][0]<=g.nSch)});
+    }
+    return {N,maxS,nSch,opts,gs};
+  }
   for(let L=1;L<=N;L++){
-    const sz=sizesFor(N,L);if(L>1&&sz[sz.length-1]<3)break;if(sz[0]>12)continue;
+    const sz=sizesFor(N,L);if(L>1&&sz[sz.length-1]<3)break;if(sz[0]>MAXP)continue;
     opts.push({L,sz,ok:L>=maxS&&sz[0]<=nSch});
   }
   return {N,maxS,nSch,opts};
 }
 function renderPlan(){
   const po=planOptions();
-  if(!S.L||!po.opts.some(o=>o.L===S.L)){const g=po.opts.filter(o=>o.ok);const pick=g.find(o=>o.sz[0]<=6)||g[0]||po.opts[0];S.L=pick?pick.L:null}
-  $("summary").innerHTML=po.N?`<b>${po.N}ペア</b>（${po.nSch}校）　いちばん多い学校は${po.maxS}ペア。同じ学校を全部別のリーグに分けるには <b>${po.maxS}リーグ以上</b>、1リーグ${po.nSch}ペアまでです。`:"STEP 2 でペアを入れてください。";
+  if(!S.L||!po.opts.some(o=>o.L===S.L)){const g=po.opts.filter(o=>o.ok);const pick=(po.gs?po.opts[0]:g.find(o=>o.sz[0]<=6))||g[0]||po.opts[0];S.L=pick?pick.L:null}
+  const szTxt=sz=>[...new Set(sz)].map(v=>`${v}ペア×${sz.filter(x=>x===v).length}`).join("・");
+  $("summary").innerHTML=!po.N?"STEP 2 でペアを入れてください。":po.gs
+    ?`<b>${po.N}ペア</b>（${po.nSch}校）を各校の上半分 <b>${po.gs[0].n}ペア</b>・下半分 <b>${po.gs[1].n}ペア</b>に分けます。ペア数が奇数の学校の真ん中のペアは、少ないほうに入れます。1リーグ${MAXP}ペアまで。`
+    :`<b>${po.N}ペア</b>（${po.nSch}校）　いちばん多い学校は${po.maxS}ペア。同じ学校を全部別のリーグに分けるには <b>${po.maxS}リーグ以上</b>、1リーグ${po.nSch}ペアまでです。（1リーグは${MAXP}ペアまで）`;
   $("plans").innerHTML=po.opts.map(o=>{
-    const s=[...new Set(o.sz)].map(v=>`${v}ペア×${o.sz.filter(x=>x===v).length}`).join("・");
-    return `<button type="button" class="chip" data-l="${o.L}" aria-pressed="${o.L===S.L}">${o.L}リーグ <small>${s}${o.ok?"":skipOn()?"　同校戦は抜く":"　同校対戦あり"}</small></button>`;
+    const s=o.szs?`上位 ${szTxt(o.szs[0])}／下位 ${szTxt(o.szs[1])}`:szTxt(o.sz);
+    return `<button type="button" class="chip" data-l="${o.L}" aria-pressed="${o.L===S.L}">${o.szs?`上下 各${o.k}リーグ`:o.L+"リーグ"} <small>${s}${o.ok?"":skipOn()?"　同校戦は抜く":"　同校対戦あり"}</small></button>`;
   }).join("");
   $("plans").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{commit({L:+b.dataset.l});renderPlan()});
   const o=po.opts.find(o=>o.L===S.L),m=$("buildMsg");
@@ -1130,6 +1219,8 @@ function renderPlan(){
   $("buildBtn").textContent=has?"リーグを組み直す（入力した結果は消えます）":"リーグを組む（抽選）";
 }
 $("oBalance").onchange=e=>commit({balance:e.target.checked});
+$("splitMix").onclick=()=>{commit({split:"mix",L:null});renderSetup(false)};
+$("splitHalf").onclick=()=>{commit({split:"half",L:null});renderSetup(false)};
 $("skipOn").onclick=()=>{S.skipSame=true;commit({skipSame:true,leagues:S.leagues&&S.leagues.map(l=>withOrder(l.ids,S))});renderSetup(false)};
 $("skipOff").onclick=()=>{S.skipSame=false;commit({skipSame:false,leagues:S.leagues&&S.leagues.map(l=>withOrder(l.ids,S))});renderSetup(false)};
 document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{commit({games:+b.dataset.g});renderSetup(false)});
@@ -1138,7 +1229,7 @@ $("buildBtn").onclick=()=>{
   if(Object.keys(S.scores||{}).length&&b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="本当に組み直す（もう一度押す）";return}
   b.dataset.sure="";
   if(S.pairs.length<3)return;
-  const lgs=buildLeagues(S,S.L);commit({leagues:lgs,scores:{},L:S.L});renderSetup(false);toast("リーグを組みました");
+  const lgs=buildLeagues(S,S.L);commit({leagues:lgs,scores:{},L:S.L,builtHalf:halfMode(S)});renderSetup(false);toast("リーグを組みました");
 };
 function sameCount(lg){const c={};lg.ids.forEach(id=>c[PB[id].sid]=(c[PB[id].sid]||0)+1);let n=0;for(const k in c)n+=c[k]*(c[k]-1)/2;return n}
 function renderLeagues(){
@@ -1149,7 +1240,7 @@ function renderLeagues(){
   $("buildStatus").innerHTML=(!total?`<span class="pill ok">同じ学校どうしの対戦なし</span>`
     :skipOn()?`<span class="pill info">同じ学校どうしの ${total} 試合は行わない</span>`:`<span class="pill ng">同じ学校どうしの対戦 ${total}試合</span>`)
     +(un.length?` <span class="pill ng">未配置 ${un.length}ペア</span>`:"");
-  const sel=(id,cur)=>`<select data-mv="${id}" aria-label="移動先">${cur<0?'<option value="">入れる先</option>':""}${S.leagues.map((_,j)=>`<option value="${j}"${j===cur?" selected":""}>${LNAMES[j]||j+1}</option>`).join("")}</select>`;
+  const sel=(id,cur)=>`<select data-mv="${id}" aria-label="移動先">${cur<0?'<option value="">入れる先</option>':""}${S.leagues.map((_,j)=>`<option value="${j}"${j===cur?" selected":""}>${lname(j)}</option>`).join("")}</select>`;
   const item=(id,i,li,cls)=>{const p=PB[id];return `<li class="${cls}"><span class="no">${li<0?"":i+1}</span><span class="dot" style="background:${COLORS[Math.max(0,schoolIdx(p.sid))%COLORS.length]}"></span>
     <span class="nm">${esc(p.name)}<small>${esc(schoolName(p))}・${p.tier}番手</small></span>
     <span class="ctl">${li<0?"":`<button type="button" data-up="${li},${i}" aria-label="番号を上げる">▲</button><button type="button" data-dn="${li},${i}" aria-label="番号を下げる">▼</button>`}${sel(id,li)}</span></li>`};
@@ -1158,7 +1249,7 @@ function renderLeagues(){
   h+=`<div class="leagues">`+S.leagues.map((lg,li)=>{
     const c={};lg.ids.forEach(id=>c[PB[id].sid]=(c[PB[id].sid]||0)+1);
     const ms=leagueMatches(lg).length,sc=sameCount(lg);
-    return `<div class="lg"><h3>${LNAMES[li]||li+1}リーグ <small>${lg.ids.length}ペア・${ms}試合${sc&&skipOn()?`（同校${sc}試合なし）`:sc?`・同校対戦${sc}`:""}</small></h3>
+    return `<div class="lg"><h3>${lname(li)}リーグ <small>${lg.ids.length}ペア・${ms}試合${sc&&skipOn()?`（同校${sc}試合なし）`:sc?`・同校対戦${sc}`:""}</small></h3>
       <ol>${lg.ids.map((id,i)=>item(id,i,li,c[PB[id].sid]>1?(skipOn()?"same":"bad"):"")).join("")}</ol></div>`;
   }).join("")+`</div>`;
   area.innerHTML=h;
@@ -1200,8 +1291,10 @@ const LN_D='<svg class="ln" viewBox="0 0 100 100" preserveAspectRatio="none" ari
 const LN_X='<svg class="ln" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="0" x2="100" y2="100" stroke="#000" stroke-width=".8" vector-effect="non-scaling-stroke"/><line x1="100" y1="0" x2="0" y2="100" stroke="#000" stroke-width=".8" vector-effect="non-scaling-stroke"/></svg>';
 function sheetFor(lg,li){
   const ids=lg.ids,n=ids.length,ms=leagueMatches(lg),withS=prefs.scores,st=standings(lg);
-  const rowH=n<=6?18:n<=8?15:n<=10?12.5:Math.max(8,125/n),cw=n>10?7:9;
-  let t=`<table class="lt"><colgroup><col style="width:9mm"><col>${`<col style="width:${cw}mm">`.repeat(n)}<col style="width:11mm"><col style="width:9mm"><col style="width:9mm"></colgroup>
+  const big=n>12,many=ms.length>66; // 13ペア以上は表を小さく、67試合以上は対戦順序を2枚目に
+  const rowH=n<=6?18:n<=8?15:n<=10?12.5:big?Math.max(5.5,Math.min(10,180/n)):Math.max(8,125/n),cw=big?Math.min(7,Math.floor(1150/n)/10):n>10?7:9;
+  const w=big?[6,9,7,7]:[9,11,9,9];
+  let t=`<table class="lt${big?" big":""}${n>18?" tiny":""}"><colgroup><col style="width:${w[0]}mm"><col>${`<col style="width:${cw}mm">`.repeat(n)}<col style="width:${w[1]}mm"><col style="width:${w[2]}mm"><col style="width:${w[3]}mm"></colgroup>
     <thead><tr><th class="num"></th><th class="pair"></th>${ids.map((_,i)=>`<th>${i+1}</th>`).join("")}<th class="small res">勝率</th><th class="small">差</th><th class="small">順位</th></tr></thead><tbody>`;
   ids.forEach((id,i)=>{
     const p=PB[id],r=st.rows[i];
@@ -1210,20 +1303,23 @@ function sheetFor(lg,li){
       if(i===j)return t+=`<td class="diag">${LN_D}</td>`;
       if(skipOn()&&PB[id2].sid===p.sid)return t+=`<td class="skip">${LN_X}</td>`;
       const s=withS?getScore(id,id2):null;
-      t+=s?`<td class="s"><span class="mk">${s[0]>s[1]?"○":"●"}</span>${s[0]}-${s[1]}</td>`:`<td></td>`;
+      t+=s?`<td class="s"><span class="mk">${s[0]>s[1]?"○":"●"}</span>${n>18?"":`${s[0]}-${s[1]}`}</td>`:`<td></td>`;
     });
     t+=withS&&r.pl?`<td class="res v">${r.w}-${r.l}</td><td class="v">${fmtDiff(r)}</td><td class="rk">${st.complete?st.rank[id]:""}</td></tr>`:`<td class="res"></td><td></td><td></td></tr>`;
   });
   t+="</tbody></table>";
-  const named=prefs.names,sk=matchOrder(n).length-ms.length;
+  const named=prefs.names&&!many,sk=n*(n-1)/2-ms.length;
   const ol=ms.map(m=>{const s=withS?getScore(m.ida,m.idb):null;
-    return `<li><span class="i">${m.no}.</span><span class="mm">${m.a}-${m.b}</span>${named?`<span class="vs">${esc(PB[m.ida].name)} − ${esc(PB[m.idb].name)}</span>`:""}（${s?`${s[0]}-${s[1]}`:"　　　"}）</li>`}).join("");
-  return `<div class="sheet"><div class="sh-head"><div class="sh-title">リーグ戦対戦表</div>${metaHtml(`<span class="lgname">${LNAMES[li]||li+1}リーグ</span>`)}</div>
-    ${t}<div class="ord${named?" named":""}"><h4>＜対戦順序＞　［${n}ペア］${sk?`　同じ学校どうしの${sk}試合は行わない（表の×印）`:""}</h4><ol>${ol}</ol></div>
-    <div class="foot">${isCustom(lg)?"対戦順序：同じ学校どうしの試合を除き、途中の試合数がそろうように作成":n>10?"11ペア以上の対戦順序はこのページで作成":"対戦順序：埼玉県高体連ソフトテニス専門部の様式による"}</div></div>`;
+    return `<li><span class="i">${m.no}.</span><span class="mm">${m.a}-${m.b}</span>${named?`<span class="vs">${esc(PB[m.ida].name)} − ${esc(PB[m.idb].name)}</span>`:""}${many?"":`（${s?`${s[0]}-${s[1]}`:"　　　"}）`}</li>`}).join("");
+  const head=sub=>`<div class="sh-head"><div class="sh-title">リーグ戦対戦表${sub||""}</div>${metaHtml(`<span class="lgname">${lname(li)}リーグ</span>`)}</div>`;
+  const ord=`<div class="ord${named?" named":""}${many?" many":""}"><h4>＜対戦順序＞　［${n}ペア・${ms.length}試合］${sk?`　同じ学校どうしの${sk}試合は行わない（表の×印）`:""}${many?"　結果は表に記入":""}</h4><ol>${ol}</ol></div>`;
+  return `<div class="sheet">${head()}
+    ${t}${many?"":ord}
+    <div class="foot">${isCustom(lg)?"対戦順序：同じ学校どうしの試合を除き、途中の試合数がそろうように作成":n>10?"11ペア以上の対戦順序はこのページで作成":"対戦順序：埼玉県高体連ソフトテニス専門部の様式による"}</div></div>`
+    +(many?`<div class="sheet">${head("（対戦順序）")}${ord}</div>`:"");
 }
 function overviewSheet(){
-  const blocks=S.leagues.map((lg,li)=>`<div><h5>${LNAMES[li]||li+1}リーグ（${lg.ids.length}ペア）</h5><table class="ov">${lg.ids.map((id,i)=>`<tr><td class="n">${i+1}</td><td>${esc(PB[id].name)}</td><td>${esc(schoolName(PB[id]))}</td></tr>`).join("")}</table></div>`).join("");
+  const blocks=S.leagues.map((lg,li)=>`<div><h5>${lname(li)}リーグ（${lg.ids.length}ペア）</h5><table class="ov">${lg.ids.map((id,i)=>`<tr><td class="n">${i+1}</td><td>${esc(PB[id].name)}</td><td>${esc(schoolName(PB[id]))}</td></tr>`).join("")}</table></div>`).join("");
   return `<div class="sheet"><div class="sh-head"><div class="sh-title">リーグ分け一覧</div>${metaHtml("")}</div><div class="ovgrid">${blocks}</div></div>`;
 }
 function renderSheets(){

@@ -13,7 +13,7 @@
   --paper:#f4f6f2; --panel:#ffffff; --ink:#1d2a2a; --muted:#5d6b66; --line:#d5ddd6;
   --court:#2e6b4c; --court-soft:#e2eee6; --court-ink:#ffffff;
   --clay:#b5652f; --clay-soft:#f6e8dc;
-  --warn:#b3372b; --warn-soft:#fbe7e3; --ok:#2e6b4c;
+  --warn:#b3372b; --warn-soft:#fbe7e3; --wait:#a86a00; --wait-soft:#fdf0d2; --ok:#2e6b4c;
   --hatch:#c9d1cb;
   --sheet:#ffffff; --sheet-ink:#000000;
   color-scheme:light;
@@ -23,7 +23,7 @@
     --paper:#141a18; --panel:#1d2522; --ink:#e6ece8; --muted:#9aa8a1; --line:#34413c;
     --court:#5fae86; --court-soft:#23372d; --court-ink:#0f1a15;
     --clay:#e0925a; --clay-soft:#3a2a1e;
-    --warn:#f08a7c; --warn-soft:#3a2320; --ok:#5fae86; --hatch:#3c4944;
+    --warn:#f08a7c; --warn-soft:#3a2320; --wait:#e0a83c; --wait-soft:#3a2f17; --ok:#5fae86; --hatch:#3c4944;
     color-scheme:dark;
   }
 }
@@ -31,7 +31,7 @@
   --paper:#141a18; --panel:#1d2522; --ink:#e6ece8; --muted:#9aa8a1; --line:#34413c;
   --court:#5fae86; --court-soft:#23372d; --court-ink:#0f1a15;
   --clay:#e0925a; --clay-soft:#3a2a1e;
-  --warn:#f08a7c; --warn-soft:#3a2320; --ok:#5fae86; --hatch:#3c4944;
+  --warn:#f08a7c; --warn-soft:#3a2320; --wait:#e0a83c; --wait-soft:#3a2f17; --ok:#5fae86; --hatch:#3c4944;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -273,6 +273,16 @@ nav.bnav button[aria-selected="true"] svg{stroke-width:2.3}
 .mt.oncourt{border-color:var(--court);background:color-mix(in srgb,var(--court) 9%,var(--panel));box-shadow:inset 3px 0 0 var(--court)}
 .mt.done{background:color-mix(in srgb,var(--muted) 22%,var(--panel));border-color:color-mix(in srgb,var(--muted) 45%,var(--panel))}
 .mt.done .side,.mt.done .mno b{color:color-mix(in srgb,var(--ink) 75%,var(--muted))}
+.mt.ended{background:var(--wait-soft);border-color:var(--wait);box-shadow:inset 3px 0 0 var(--wait)}
+.mt .tag.edt{background:var(--wait);color:#fff}
+.mt .sc.ed{color:var(--wait);font-weight:700}
+.wr-h{margin:12px 0 6px;font-size:15px}
+.wr-h b{color:var(--wait);font-size:17px}
+.wr-h small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.wr{display:flex;flex-direction:column;gap:6px}
+.wr button{text-align:left;background:var(--wait-soft);border:1px solid var(--wait);border-radius:8px;padding:10px 12px;min-height:44px;font-size:14px;color:var(--ink)}
+.wr button small{color:var(--muted);margin-right:6px}
+.bs-end{width:100%;min-height:48px;margin:4px 0 12px;font-size:15px}
 .mt.blocked{background:color-mix(in srgb,var(--warn) 24%,var(--panel));border-color:var(--warn)}
 .mt .tag.bl{background:var(--warn);color:#fff}
 .mt .sc.bl{color:var(--warn);font-weight:700}
@@ -538,7 +548,7 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
     <li><b>大会を作る</b>「新しい大会を作る」で管理番号（4〜8けた）を決めると、6けたの大会番号が出ます。管理番号は毎回同じにしておくと便利です。</li>
     <li><b>学校とペアを入れる</b>「リーグ分け」で学校ごとに1行1ペア。上から1番手・2番手の順に入れます。</li>
     <li><b>リーグを組む</b>リーグ数を選んで「リーグを組む」。同じ学校のペアはできるだけ別のリーグに分かれます。同じリーグに入ったときは、その試合をしない（表に×）か、するかを選べます。「各校の上半分・下半分で分ける」を選ぶと、各校の上位のペアで上位リーグ、残りで下位リーグを作ります。1リーグは30ペアまでです。</li>
-    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。試合を始めるときは、空いた面か試合をタップして面に入れます（自動では入りません）。結果を入れると面が空きます。どちらかのペアがほかの面で試合中で、いま入れない試合は赤で出ます。実際とちがうときは試合をタップして面を選び直します。</li>
+    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。試合を始めるときは、空いた面か試合をタップして面に入れます（自動では入りません）。結果を入れると面が空きます。結果が来る前に次の試合を入れるときは、試合中の面をタップして「試合終了（結果はあとで）」を押します。終わった試合は「結果待ち」に並ぶので、記録が来たらタップして入れます。どちらかのペアがほかの面で試合中で、いま入れない試合は赤で出ます。実際とちがうときは試合をタップして面を選び直します。</li>
     <li><b>部員に知らせる</b>画面の上の大会番号を押すとQRコードが出ます。部員に読んでもらいます。</li>
     <li><b>対戦表を印刷する</b>「印刷」でA4・1リーグ1枚（試合が多いリーグは対戦順序を2枚目に）。パソコンから印刷するときれいです。</li>
   </ol>
@@ -942,7 +952,8 @@ function flush(){
 /* ---------- コート（面） ----------
    リーグごとに使う面（courts[li] "1,2"）を決める。試合は自動では入れず、
    試合（または空いた面）をタップして面を選んだときに入る。onCourt[li]={試合キー:面}。
-   結果を入れるとその面は空く。 */
+   結果を入れるとその面は空く。結果が来る前に面を空けるときは「終わった（結果待ち）」＝ onCourt の値 "#end"。 */
+const ENDED="#end";
 const z2h=t=>String(t||"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
 function courtLabels(li){return z2h((S.courts||[])[li]).split(/[,，、・\s　]+/).filter(Boolean).map(x=>/^\d+$/.test(x)?x+"面":x).filter((x,i,a)=>a.indexOf(x)===i)}
 function courtState(li,saved){
@@ -952,29 +963,36 @@ function courtState(li,saved){
   const at={},on={},busy=new Set();
   const put=(lab,m)=>{at[lab]=m;on[skey(m.ida,m.idb)]=lab;busy.add(m.ida);busy.add(m.idb)};
   labels.forEach(lab=>{const k=Object.keys(saved).find(k=>saved[k]===lab&&byKey[k]&&!on[k]);const m=k&&byKey[k];if(m&&!busy.has(m.ida)&&!busy.has(m.idb))put(lab,m)});
+  const ended=new Set(Object.keys(saved).filter(k=>saved[k]===ENDED&&byKey[k]&&!on[k]));
   // 次＝いま入れる（どちらのペアも試合中でない）いちばん早い試合
-  const next=open.find(m=>!on[skey(m.ida,m.idb)]&&!busy.has(m.ida)&&!busy.has(m.idb));
+  const next=open.find(m=>{const k=skey(m.ida,m.idb);return !on[k]&&!ended.has(k)&&!busy.has(m.ida)&&!busy.has(m.idb)});
   const playing={};Object.entries(at).forEach(([lab,m])=>{playing[m.ida]=lab;playing[m.idb]=lab});
-  return {labels,at,on,next,playing};
+  return {labels,at,on,next,playing,ended,byKey};
 }
 const leagueOfKey=k=>(S.leagues||[]).findIndex(lg=>leagueMatches(lg).some(m=>skey(m.ida,m.idb)===k));
 function saveCourts(li,snap){commit({onCourt:{...(S.onCourt||{}),[li]:snap}})}
 // 結果を入れたら、その試合を面から外す
+const snapOf=st=>{const o={...st.on};st.ended.forEach(k=>o[k]=ENDED);return o};
 function courtsBeforeScore(k){
   const li=leagueOfKey(k),st=li>=0&&courtState(li);if(!st)return;
-  const snap={...st.on};delete snap[k];saveCourts(li,snap);
+  const snap=snapOf(st);if(!(k in snap))return;delete snap[k];saveCourts(li,snap);
 }
-function putOnCourt(li,k,lab){
+// k を面 lab に入れる（lab="" なら面から外して待ちに）。その面にいた試合は prevEnded なら結果待ち、でなければ待ちにもどす
+function putOnCourt(li,k,lab,prevEnded){
   const st=courtState(li);if(!st)return;
-  const m=Object.values(st.at).concat(leagueMatches(S.leagues[li])).find(m=>skey(m.ida,m.idb)===k);if(!m)return;
-  const snap={};
-  Object.entries(st.on).forEach(([kk,l])=>{if(kk===k||l===lab)return;const o=st.at[l];if(o.ida===m.ida||o.ida===m.idb||o.idb===m.ida||o.idb===m.idb)return;snap[kk]=l});
+  const m=leagueMatches(S.leagues[li]).find(m=>skey(m.ida,m.idb)===k);if(!m)return;
+  const snap={};st.ended.forEach(kk=>{if(kk!==k)snap[kk]=ENDED});
+  Object.entries(st.on).forEach(([kk,l])=>{if(kk===k)return;
+    if(l===lab){if(prevEnded)snap[kk]=ENDED;return}
+    const o=st.at[l];if(o.ida===m.ida||o.ida===m.idb||o.idb===m.ida||o.idb===m.idb)return;snap[kk]=l});
   if(lab)snap[k]=lab;saveCourts(li,snap);
 }
+// 面の試合を「終わった（結果待ち）」にして面を空ける
+function endOnCourt(li,k){const st=courtState(li);if(!st)return;const snap=snapOf(st);snap[k]=ENDED;saveCourts(li,snap)}
 // いま入れる（どちらのペアも試合中でない）待ちの試合
 function readyMatches(li){
   const st=courtState(li);if(!st)return [];
-  return leagueMatches(S.leagues[li]).filter(m=>!getScore(m.ida,m.idb)&&!st.on[skey(m.ida,m.idb)]&&!st.playing[m.ida]&&!st.playing[m.idb]);
+  return leagueMatches(S.leagues[li]).filter(m=>{const k=skey(m.ida,m.idb);return !getScore(m.ida,m.idb)&&!st.on[k]&&!st.ended.has(k)&&!st.playing[m.ida]&&!st.playing[m.idb]});
 }
 
 function setScore(x,y,val){
@@ -1150,11 +1168,12 @@ function renderMatches(){
   t+=`<ol class="matches">`+list.map(m=>{
     const A=PB[m.ida],B=PB[m.idb],s=getScore(m.ida,m.idb),key=skey(m.ida,m.idb),oc=cs&&cs.on[key];
     // ほかの面で試合中のペアがいて、いま入れない試合は赤
-    const pa=!s&&!oc&&cs&&cs.playing[m.ida],pb2=!s&&!oc&&cs&&cs.playing[m.idb],blocked=pa||pb2;
-    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:blocked?`<span class="sc none bl">入れない</span>`:cs?`<span class="sc none">タップで面へ</span>`:`<span class="sc none">タップで入力</span>`;
+    const ed=!s&&cs&&cs.ended.has(key);
+    const pa=!s&&!oc&&!ed&&cs&&cs.playing[m.ida],pb2=!s&&!oc&&!ed&&cs&&cs.playing[m.idb],blocked=pa||pb2;
+    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:ed?`<span class="sc none ed">結果待ち</span>`:blocked?`<span class="sc none bl">入れない</span>`:cs?`<span class="sc none">タップで面へ</span>`:`<span class="sc none">タップで入力</span>`;
     const sub=(no,p,pl)=>pl?`<small class="busy">${esc(pl)}で試合中</small>`:`<small>${no}番・${esc(schoolName(p))}</small>`;
-    return `<li class="mt${s?" done":oc?" oncourt":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
-      <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:blocked?'<span class="tag bl">待ち</span>':m.no===nextNo?'<span class="tag">次</span>':""}</span>
+    return `<li class="mt${s?" done":oc?" oncourt":ed?" ended":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
+      <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:ed?'<span class="tag edt">終了</span>':blocked?'<span class="tag bl">待ち</span>':m.no===nextNo?'<span class="tag">次</span>':""}</span>
       <span class="side${s&&s[0]>s[1]?" win":""}">${esc(A.name)}${sub(m.a,A,pa)}</span>${sc}
       <span class="side r${s&&s[1]>s[0]?" win":""}">${esc(B.name)}${sub(m.b,B,pb2)}</span></button></li>`;
   }).join("")+`</ol>`;
@@ -1181,7 +1200,17 @@ function courtBoard(){
       :`<button type="button" class="cc empty${c.li===prefs.league?" cur":""}" data-ce="${c.li}|${esc(c.lab)}"><b>${esc(c.lab)}</b>${ln}<span class="cv">空き<small>タップで試合を入れる</small></span></button>`;
     const m=c.m;
     return `<button type="button" class="cc${c.li===prefs.league?" cur":""}" data-cm="${c.li}|${skey(m.ida,m.idb)}"><b>${esc(c.lab)}</b>${ln}<span class="cn">第${m.no}試合（${m.a}-${m.b}）</span>
-      <span class="cv">${esc(PB[m.ida].name)}<small>${esc(schoolName(PB[m.ida]))}</small></span><span class="cv">${esc(PB[m.idb].name)}<small>${esc(schoolName(PB[m.idb]))}</small></span></button>`}).join("")+`</div></section>`;
+      <span class="cv">${esc(PB[m.ida].name)}<small>${esc(schoolName(PB[m.ida]))}</small></span><span class="cv">${esc(PB[m.idb].name)}<small>${esc(schoolName(PB[m.idb]))}</small></span></button>`}).join("")+`</div>`+waitingResults()+`</section>`;
+}
+// 終わって結果待ちの試合（全リーグ）
+function waitingResults(){
+  const rows=[];
+  (S.leagues||[]).forEach((lg,li)=>{const st=courtState(li);if(!st)return;st.ended.forEach(k=>rows.push({li,m:st.byKey[k]}))});
+  if(!rows.length)return "";
+  rows.sort((a,b)=>a.li-b.li||a.m.no-b.m.no);
+  const multi=S.leagues.length>1;
+  return `<h3 class="wr-h">結果待ち <b>${rows.length}</b>試合 <small>記録が来たらタップして入力</small></h3><div class="wr">`+rows.map(({li,m})=>
+    `<button type="button" data-cm="${li}|${skey(m.ida,m.idb)}">${multi?`<small>${esc(lname(li))}</small>`:""}第${m.no}試合　${esc(PB[m.ida].name)} 対 ${esc(PB[m.idb].name)}</button>`).join("")+`</div>`;
 }
 let sheetKey=null,courtSheet=null;
 function openCourtSheet(li,lab){courtSheet={li,lab};sheetKey=null;refreshCourtSheet();$("bsBg").hidden=false;document.body.style.overflow="hidden"}
@@ -1200,9 +1229,11 @@ function openSheet(key){sheetKey=key;refreshSheet();$("bsBg").hidden=false;docum
 function closeSheet(){sheetKey=null;courtSheet=null;$("bsBg").hidden=true;document.body.style.overflow=""}
 function courtPick(m){
   const st=courtState(prefs.league);if(!st)return "";
-  const cur=st.on[skey(m.ida,m.idb)];
+  const key=skey(m.ida,m.idb),cur=st.on[key];
   const free=l=>!st.at[l];
-  return `<div class="bs-sec"><div class="bs-lab">${cur?`いま <b>${esc(cur)}</b> で試合中。別の面にするとき：`:"この試合を入れる面："}</div>
+  const end=cur?`<button type="button" class="primary bs-end" data-end="1">試合終了（結果はあとで）→ ${esc(cur)}に次の試合を入れる</button>`
+    :st.ended.has(key)?`<p class="hint" style="margin:0 0 8px">この試合は終わって、結果待ちです。</p>`:"";
+  return end+`<div class="bs-sec"><div class="bs-lab">${cur?`いま <b>${esc(cur)}</b> で試合中。別の面にするとき：`:"この試合を入れる面："}</div>
     <div class="bs-courts">${st.labels.map(l=>`<button type="button" data-oc="${esc(l)}"${l===cur?" disabled":""}>${esc(l)}${l!==cur&&!free(l)?"<small>入れかえ</small>":""}</button>`).join("")}
     ${cur?`<button type="button" data-oc="">面から外す</button>`:""}</div></div>`;
 }
@@ -1219,7 +1250,18 @@ function refreshSheet(){
     <div class="bs-sec"><div class="bs-lab">○ <b>${esc(A.name)}</b> の勝ち</div><div class="bs-grid" style="grid-template-columns:repeat(${k},1fr)">${ks.map(x=>btn(k,x)).join("")}</div></div>
     <div class="bs-sec"><div class="bs-lab">○ <b>${esc(B.name)}</b> の勝ち</div><div class="bs-grid" style="grid-template-columns:repeat(${k},1fr)">${[...ks].reverse().map(x=>btn(x,k)).join("")}</div></div>
     ${s?`<button type="button" class="bs-clear danger" data-set="">結果を消す</button>`:courtPick(m)}`;
-  $("bsBody").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>{putOnCourt(prefs.league,sheetKey,b.dataset.oc);closeSheet();renderAll(false);toast(b.dataset.oc?`第${m.no}試合を${b.dataset.oc}に入れました`:`第${m.no}試合を面から外しました`)});
+  const li=prefs.league,key=sheetKey;
+  $("bsBody").querySelectorAll("[data-end]").forEach(b=>b.onclick=()=>{const lab=courtState(li).on[key];endOnCourt(li,key);renderAll(false);openCourtSheet(li,lab);toast(`第${m.no}試合を結果待ちにしました`)});
+  $("bsBody").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>{
+    const lab=b.dataset.oc,o=lab&&courtState(li).at[lab];
+    const done=prev=>{putOnCourt(li,key,lab,prev);closeSheet();renderAll(false);toast(lab?`第${m.no}試合を${lab}に入れました`:`第${m.no}試合を面から外しました`)};
+    if(!o)return done(false);
+    // その面にほかの試合がいるとき：終わったか、まだか
+    $("bsBody").innerHTML=`<p style="margin:0 0 10px">${esc(lab)}には <b>第${o.no}試合</b>（${esc(PB[o.ida].name)} 対 ${esc(PB[o.idb].name)}）が入っています。</p>
+      <div class="bs-pick"><button type="button" data-prev="1"><span class="pk-no">終わった</span><span class="pk-v">第${o.no}試合は結果待ちにして、第${m.no}試合を入れる</span></button>
+      <button type="button" data-prev="0"><span class="pk-no">まだ</span><span class="pk-v">第${o.no}試合は待ちにもどして、第${m.no}試合を入れる</span></button></div>`;
+    $("bsBody").querySelectorAll("[data-prev]").forEach(x=>x.onclick=()=>done(x.dataset.prev==="1"));
+  });
   $("bsBody").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{
     setScore(m.ida,m.idb,b.dataset.set?b.dataset.set.split(",").map(Number):null);
     closeSheet();renderAll(false);toast(b.dataset.set?`第${m.no}試合 ${b.dataset.set.replace(",","-")} を入れました`:"消しました");

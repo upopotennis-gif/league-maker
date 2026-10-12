@@ -271,7 +271,13 @@ nav.bnav button[aria-selected="true"] svg{stroke-width:2.3}
 .cc.empty{border-style:dashed;border-color:var(--line)}
 .cc.empty .cv{color:var(--muted);font-size:13px}
 .mt.oncourt{border-color:var(--court);background:color-mix(in srgb,var(--court) 9%,var(--panel));box-shadow:inset 3px 0 0 var(--court)}
-.mt .tag.ct{font-size:11px;padding:1px 5px}
+.mt.blocked{background:color-mix(in srgb,var(--warn) 24%,var(--panel));border-color:var(--warn)}
+.mt .tag.bl{background:var(--warn);color:#fff}
+.mt .sc.bl{color:var(--warn);font-weight:700}
+.mt .side small.busy{color:var(--warn);font-weight:700}
+.mt .tag.ct{font-size:11px;padding:1px 4px}
+.mt .tag{white-space:nowrap}
+.mt .mno .tag{display:block;width:max-content;margin:2px 0 0}
 .mt .sc.oc{color:var(--court);font-weight:700}
 .lgcourt{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
 .lgcourt input{flex:1;min-width:0;height:36px;font-size:16px}
@@ -521,7 +527,7 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
     <li><b>大会を作る</b>「新しい大会を作る」で管理番号（4〜8けた）を決めると、6けたの大会番号が出ます。管理番号は毎回同じにしておくと便利です。</li>
     <li><b>学校とペアを入れる</b>「リーグ分け」で学校ごとに1行1ペア。上から1番手・2番手の順に入れます。</li>
     <li><b>リーグを組む</b>リーグ数を選んで「リーグを組む」。同じ学校のペアはできるだけ別のリーグに分かれます。同じリーグに入ったときは、その試合をしない（表に×）か、するかを選べます。「各校の上半分・下半分で分ける」を選ぶと、各校の上位のペアで上位リーグ、残りで下位リーグを作ります。1リーグは30ペアまでです。</li>
-    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。結果を入れると、空いた面に次の試合が入ります。実際とちがうときは試合をタップして面を選び直します。</li>
+    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。結果を入れると、空いた面に次の試合が入ります。どちらかのペアがほかの面で試合中で、いま入れない試合は赤で出ます。実際とちがうときは試合をタップして面を選び直します。</li>
     <li><b>部員に知らせる</b>画面の上の大会番号を押すとQRコードが出ます。部員に読んでもらいます。</li>
     <li><b>対戦表を印刷する</b>「印刷」でA4・1リーグ1枚（試合が多いリーグは対戦順序を2枚目に）。パソコンから印刷するときれいです。</li>
   </ol>
@@ -935,8 +941,10 @@ function courtState(li,saved){
   const put=(lab,m)=>{at[lab]=m;on[skey(m.ida,m.idb)]=lab;busy.add(m.ida);busy.add(m.idb)};
   labels.forEach(lab=>{const k=Object.keys(saved).find(k=>saved[k]===lab&&byKey[k]&&!on[k]);const m=k&&byKey[k];if(m&&!busy.has(m.ida)&&!busy.has(m.idb))put(lab,m)});
   labels.forEach(lab=>{if(at[lab])return;const m=open.find(m=>!on[skey(m.ida,m.idb)]&&!busy.has(m.ida)&&!busy.has(m.idb));if(m)put(lab,m)});
-  const next=open.find(m=>!on[skey(m.ida,m.idb)]);
-  return {labels,at,on,next};
+  // 次＝いま入れる（どちらのペアも試合中でない）いちばん早い試合
+  const next=open.find(m=>!on[skey(m.ida,m.idb)]&&!busy.has(m.ida)&&!busy.has(m.idb));
+  const playing={};Object.entries(at).forEach(([lab,m])=>{playing[m.ida]=lab;playing[m.idb]=lab});
+  return {labels,at,on,next,playing};
 }
 const leagueOfKey=k=>(S.leagues||[]).findIndex(lg=>leagueMatches(lg).some(m=>skey(m.ida,m.idb)===k));
 function saveCourts(li,snap){commit({onCourt:{...(S.onCourt||{}),[li]:snap}})}
@@ -1125,11 +1133,14 @@ function renderMatches(){
   t=courtBoard()+t;
   t+=`<ol class="matches">`+list.map(m=>{
     const A=PB[m.ida],B=PB[m.idb],s=getScore(m.ida,m.idb),key=skey(m.ida,m.idb),oc=cs&&cs.on[key];
-    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:`<span class="sc none">タップで入力</span>`;
-    return `<li class="mt${oc?" oncourt":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
-      <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:m.no===nextNo?'<span class="tag">次</span>':""}</span>
-      <span class="side${s&&s[0]>s[1]?" win":""}">${esc(A.name)}<small>${m.a}番・${esc(schoolName(A))}</small></span>${sc}
-      <span class="side r${s&&s[1]>s[0]?" win":""}">${esc(B.name)}<small>${m.b}番・${esc(schoolName(B))}</small></span></button></li>`;
+    // ほかの面で試合中のペアがいて、いま入れない試合は赤
+    const pa=!s&&!oc&&cs&&cs.playing[m.ida],pb2=!s&&!oc&&cs&&cs.playing[m.idb],blocked=pa||pb2;
+    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:blocked?`<span class="sc none bl">入れない</span>`:`<span class="sc none">タップで入力</span>`;
+    const sub=(no,p,pl)=>pl?`<small class="busy">${esc(pl)}で試合中</small>`:`<small>${no}番・${esc(schoolName(p))}</small>`;
+    return `<li class="mt${oc?" oncourt":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
+      <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:blocked?'<span class="tag bl">待ち</span>':m.no===nextNo?'<span class="tag">次</span>':""}</span>
+      <span class="side${s&&s[0]>s[1]?" win":""}">${esc(A.name)}${sub(m.a,A,pa)}</span>${sc}
+      <span class="side r${s&&s[1]>s[0]?" win":""}">${esc(B.name)}${sub(m.b,B,pb2)}</span></button></li>`;
   }).join("")+`</ol>`;
   if(!list.length)t+=`<p class="hint">残っている試合はありません。</p>`;
   if(skipOn()&&n>1){const sk=matchOrder(n).length-ms.length;if(sk)t+=`<p class="hint">同じ学校どうしの ${sk} 試合は行いません。残りの試合は、途中で試合数に差が出ないように並べてあります。</p>`}

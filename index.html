@@ -271,6 +271,8 @@ nav.bnav button[aria-selected="true"] svg{stroke-width:2.3}
 .cc.empty{border-style:dashed;border-color:var(--line)}
 .cc.empty .cv{color:var(--muted);font-size:13px}
 .mt.oncourt{border-color:var(--court);background:color-mix(in srgb,var(--court) 9%,var(--panel));box-shadow:inset 3px 0 0 var(--court)}
+.mt.done{background:color-mix(in srgb,var(--muted) 22%,var(--panel));border-color:color-mix(in srgb,var(--muted) 45%,var(--panel))}
+.mt.done .side,.mt.done .mno b{color:color-mix(in srgb,var(--ink) 75%,var(--muted))}
 .mt.blocked{background:color-mix(in srgb,var(--warn) 24%,var(--panel));border-color:var(--warn)}
 .mt .tag.bl{background:var(--warn);color:#fff}
 .mt .sc.bl{color:var(--warn);font-weight:700}
@@ -1137,7 +1139,7 @@ function renderMatches(){
     const pa=!s&&!oc&&cs&&cs.playing[m.ida],pb2=!s&&!oc&&cs&&cs.playing[m.idb],blocked=pa||pb2;
     const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:blocked?`<span class="sc none bl">入れない</span>`:`<span class="sc none">タップで入力</span>`;
     const sub=(no,p,pl)=>pl?`<small class="busy">${esc(pl)}で試合中</small>`:`<small>${no}番・${esc(schoolName(p))}</small>`;
-    return `<li class="mt${oc?" oncourt":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
+    return `<li class="mt${s?" done":oc?" oncourt":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
       <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:blocked?'<span class="tag bl">待ち</span>':m.no===nextNo?'<span class="tag">次</span>':""}</span>
       <span class="side${s&&s[0]>s[1]?" win":""}">${esc(A.name)}${sub(m.a,A,pa)}</span>${sc}
       <span class="side r${s&&s[1]>s[0]?" win":""}">${esc(B.name)}${sub(m.b,B,pb2)}</span></button></li>`;

@@ -284,6 +284,15 @@ nav.bnav button[aria-selected="true"] svg{stroke-width:2.3}
 .lgcourt{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
 .lgcourt input{flex:1;min-width:0;height:36px;font-size:16px}
 .bs-courts{display:flex;flex-wrap:wrap;gap:8px}
+.bs-courts button small{display:block;font-size:10px;color:var(--muted)}
+.bs-pick{display:flex;flex-direction:column;gap:8px}
+.bs-pick button{display:grid;grid-template-columns:6.5em 1fr;gap:8px;align-items:center;text-align:left;padding:10px 12px;min-height:56px;font-size:15px}
+.bs-pick .pk-no{font-weight:700;line-height:1.3}
+.bs-pick .pk-no small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.bs-pick .pk-no .tag{display:inline-block;font-size:10px;background:var(--court);color:var(--court-ink);border-radius:3px;padding:0 4px}
+.bs-pick .pk-v{line-height:1.45}
+.bs-pick .pk-v small{color:var(--muted);font-size:11px}
+.cc.empty .cv small{display:block;margin:2px 0 0;font-size:12px;color:var(--court)}
 .bs-courts button{min-width:64px;min-height:44px;font-size:16px}
 .mtools{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;color:var(--muted)}
 .mtools b{color:var(--ink);font-size:16px}
@@ -529,7 +538,7 @@ details summary{cursor:pointer;padding:10px 0;color:var(--court);font-weight:700
     <li><b>大会を作る</b>「新しい大会を作る」で管理番号（4〜8けた）を決めると、6けたの大会番号が出ます。管理番号は毎回同じにしておくと便利です。</li>
     <li><b>学校とペアを入れる</b>「リーグ分け」で学校ごとに1行1ペア。上から1番手・2番手の順に入れます。</li>
     <li><b>リーグを組む</b>リーグ数を選んで「リーグを組む」。同じ学校のペアはできるだけ別のリーグに分かれます。同じリーグに入ったときは、その試合をしない（表に×）か、するかを選べます。「各校の上半分・下半分で分ける」を選ぶと、各校の上位のペアで上位リーグ、残りで下位リーグを作ります。1リーグは30ペアまでです。</li>
-    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。結果を入れると、空いた面に次の試合が入ります。どちらかのペアがほかの面で試合中で、いま入れない試合は赤で出ます。実際とちがうときは試合をタップして面を選び直します。</li>
+    <li><b>使う面を入れる</b>リーグごとに「使う面」（例：1,2）を入れると、「試合」の上に各面でいま試合中の試合が出ます。試合を始めるときは、空いた面か試合をタップして面に入れます（自動では入りません）。結果を入れると面が空きます。どちらかのペアがほかの面で試合中で、いま入れない試合は赤で出ます。実際とちがうときは試合をタップして面を選び直します。</li>
     <li><b>部員に知らせる</b>画面の上の大会番号を押すとQRコードが出ます。部員に読んでもらいます。</li>
     <li><b>対戦表を印刷する</b>「印刷」でA4・1リーグ1枚（試合が多いリーグは対戦順序を2枚目に）。パソコンから印刷するときれいです。</li>
   </ol>
@@ -931,8 +940,9 @@ function flush(){
   FB.updateDoc(docRef,f).catch(e=>showConn("保存できませんでした。通信を確認してください。（"+e.code+"）"));
 }
 /* ---------- コート（面） ----------
-   リーグごとに使う面（courts[li] "1,2"）を決めると、試合順に空いた面へ次の試合を入れる。
-   いま入っている試合は onCourt[li]={試合キー:面} に保存（結果を入れたとき・手で入れかえたとき）。 */
+   リーグごとに使う面（courts[li] "1,2"）を決める。試合は自動では入れず、
+   試合（または空いた面）をタップして面を選んだときに入る。onCourt[li]={試合キー:面}。
+   結果を入れるとその面は空く。 */
 const z2h=t=>String(t||"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
 function courtLabels(li){return z2h((S.courts||[])[li]).split(/[,，、・\s　]+/).filter(Boolean).map(x=>/^\d+$/.test(x)?x+"面":x).filter((x,i,a)=>a.indexOf(x)===i)}
 function courtState(li,saved){
@@ -942,7 +952,6 @@ function courtState(li,saved){
   const at={},on={},busy=new Set();
   const put=(lab,m)=>{at[lab]=m;on[skey(m.ida,m.idb)]=lab;busy.add(m.ida);busy.add(m.idb)};
   labels.forEach(lab=>{const k=Object.keys(saved).find(k=>saved[k]===lab&&byKey[k]&&!on[k]);const m=k&&byKey[k];if(m&&!busy.has(m.ida)&&!busy.has(m.idb))put(lab,m)});
-  labels.forEach(lab=>{if(at[lab])return;const m=open.find(m=>!on[skey(m.ida,m.idb)]&&!busy.has(m.ida)&&!busy.has(m.idb));if(m)put(lab,m)});
   // 次＝いま入れる（どちらのペアも試合中でない）いちばん早い試合
   const next=open.find(m=>!on[skey(m.ida,m.idb)]&&!busy.has(m.ida)&&!busy.has(m.idb));
   const playing={};Object.entries(at).forEach(([lab,m])=>{playing[m.ida]=lab;playing[m.idb]=lab});
@@ -950,7 +959,7 @@ function courtState(li,saved){
 }
 const leagueOfKey=k=>(S.leagues||[]).findIndex(lg=>leagueMatches(lg).some(m=>skey(m.ida,m.idb)===k));
 function saveCourts(li,snap){commit({onCourt:{...(S.onCourt||{}),[li]:snap}})}
-// 結果を入れる直前の様子を保存しておく（空いた面には次の試合が入る）
+// 結果を入れたら、その試合を面から外す
 function courtsBeforeScore(k){
   const li=leagueOfKey(k),st=li>=0&&courtState(li);if(!st)return;
   const snap={...st.on};delete snap[k];saveCourts(li,snap);
@@ -960,7 +969,12 @@ function putOnCourt(li,k,lab){
   const m=Object.values(st.at).concat(leagueMatches(S.leagues[li])).find(m=>skey(m.ida,m.idb)===k);if(!m)return;
   const snap={};
   Object.entries(st.on).forEach(([kk,l])=>{if(kk===k||l===lab)return;const o=st.at[l];if(o.ida===m.ida||o.ida===m.idb||o.idb===m.ida||o.idb===m.idb)return;snap[kk]=l});
-  snap[k]=lab;saveCourts(li,snap);
+  if(lab)snap[k]=lab;saveCourts(li,snap);
+}
+// いま入れる（どちらのペアも試合中でない）待ちの試合
+function readyMatches(li){
+  const st=courtState(li);if(!st)return [];
+  return leagueMatches(S.leagues[li]).filter(m=>!getScore(m.ida,m.idb)&&!st.on[skey(m.ida,m.idb)]&&!st.playing[m.ida]&&!st.playing[m.idb]);
 }
 
 function setScore(x,y,val){
@@ -1100,7 +1114,7 @@ function renderAll(remote){
   if(prefs.tab==="matches"||prefs.tab==="standings"){renderChips();if(prefs.tab==="matches")renderMatches();else renderStandings()}
   if(prefs.tab==="setup")renderSetup(remote);
   if(prefs.tab==="print")renderSheets();
-  if(sheetKey)refreshSheet();
+  if(sheetKey)refreshSheet();else if(courtSheet)refreshCourtSheet();
 }
 document.querySelectorAll("nav.bnav button").forEach(b=>b.onclick=()=>{closeSheet();prefs.tab=b.dataset.tab;savePrefs();window.scrollTo(0,0);renderAll(false)});
 
@@ -1137,7 +1151,7 @@ function renderMatches(){
     const A=PB[m.ida],B=PB[m.idb],s=getScore(m.ida,m.idb),key=skey(m.ida,m.idb),oc=cs&&cs.on[key];
     // ほかの面で試合中のペアがいて、いま入れない試合は赤
     const pa=!s&&!oc&&cs&&cs.playing[m.ida],pb2=!s&&!oc&&cs&&cs.playing[m.idb],blocked=pa||pb2;
-    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:blocked?`<span class="sc none bl">入れない</span>`:`<span class="sc none">タップで入力</span>`;
+    const sc=s?`<span class="sc">${s[0]}-${s[1]}</span>`:oc?`<span class="sc none oc">試合中</span>`:blocked?`<span class="sc none bl">入れない</span>`:cs?`<span class="sc none">タップで面へ</span>`:`<span class="sc none">タップで入力</span>`;
     const sub=(no,p,pl)=>pl?`<small class="busy">${esc(pl)}で試合中</small>`:`<small>${no}番・${esc(schoolName(p))}</small>`;
     return `<li class="mt${s?" done":oc?" oncourt":blocked?" blocked":m.no===nextNo?" next":""}"><button type="button" class="mrow" data-m="${key}">
       <span class="mno"><b>${m.no}</b>${m.a}-${m.b}${oc?`<span class="tag ct">${esc(oc)}</span>`:blocked?'<span class="tag bl">待ち</span>':m.no===nextNo?'<span class="tag">次</span>':""}</span>
@@ -1149,6 +1163,7 @@ function renderMatches(){
   $("matchBody").innerHTML=t;
   $("remainBtn").onclick=()=>{prefs.remain=!prefs.remain;savePrefs();renderMatches()};
   $("matchBody").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>openSheet(b.dataset.m));
+  $("matchBody").querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{const [li,lab]=b.dataset.ce.split("|");prefs.league=+li;savePrefs();renderAll(false);openCourtSheet(+li,lab)});
   $("matchBody").querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{const [li,k]=b.dataset.cm.split("|");prefs.league=+li;savePrefs();renderAll(false);openSheet(k)});
 }
 // すべてのリーグの面の様子（面の番号順）
@@ -1160,21 +1175,36 @@ function courtBoard(){
   const num=l=>{const v=parseInt(l,10);return isNaN(v)?1e9:v};
   cards.sort((a,b)=>num(a.lab)-num(b.lab)||a.lab.localeCompare(b.lab,"ja")||a.li-b.li);
   const multi=S.leagues.length>1;
-  return `<section class="courts" aria-label="コートの様子"><h3>コートの様子 <small>タップで結果を入力</small></h3><div class="cgrid">`+cards.map(c=>{
+  return `<section class="courts" aria-label="コートの様子"><h3>コートの様子 <small>試合中の面をタップで結果、空きの面をタップで試合を入れる</small></h3><div class="cgrid">`+cards.map(c=>{
     const ln=multi?`<span class="cl">${esc(lname(c.li))}リーグ</span>`:"";
-    if(!c.m)return `<div class="cc empty${c.li===prefs.league?" cur":""}"><b>${esc(c.lab)}</b>${ln}<span class="cv">${c.done?"全試合終了":"空き（相手の試合待ち）"}</span></div>`;
+    if(!c.m)return c.done?`<div class="cc empty"><b>${esc(c.lab)}</b>${ln}<span class="cv">全試合終了</span></div>`
+      :`<button type="button" class="cc empty${c.li===prefs.league?" cur":""}" data-ce="${c.li}|${esc(c.lab)}"><b>${esc(c.lab)}</b>${ln}<span class="cv">空き<small>タップで試合を入れる</small></span></button>`;
     const m=c.m;
     return `<button type="button" class="cc${c.li===prefs.league?" cur":""}" data-cm="${c.li}|${skey(m.ida,m.idb)}"><b>${esc(c.lab)}</b>${ln}<span class="cn">第${m.no}試合（${m.a}-${m.b}）</span>
       <span class="cv">${esc(PB[m.ida].name)}<small>${esc(schoolName(PB[m.ida]))}</small></span><span class="cv">${esc(PB[m.idb].name)}<small>${esc(schoolName(PB[m.idb]))}</small></span></button>`}).join("")+`</div></section>`;
 }
-let sheetKey=null;
+let sheetKey=null,courtSheet=null;
+function openCourtSheet(li,lab){courtSheet={li,lab};sheetKey=null;refreshCourtSheet();$("bsBg").hidden=false;document.body.style.overflow="hidden"}
+function refreshCourtSheet(){
+  const {li,lab}=courtSheet,st=courtState(li);
+  if(!st||!st.labels.includes(lab))return closeSheet();
+  if(st.at[lab]){const m=st.at[lab];courtSheet=null;return openSheet(skey(m.ida,m.idb))}
+  const rs=readyMatches(li).slice(0,6);
+  $("bsTitle").textContent=`${lab}に入れる試合`;
+  $("bsBody").innerHTML=rs.length?`<p class="hint" style="margin:0 0 8px">試合順に、いま入れる試合を出しています（試合中のペアの試合は除く）。</p><div class="bs-pick">`+rs.map((m,i)=>
+    `<button type="button" data-pk="${skey(m.ida,m.idb)}"><span class="pk-no">第${m.no}試合<small>${m.a}-${m.b}</small>${i===0?'<span class="tag">次</span>':""}</span><span class="pk-v">${esc(PB[m.ida].name)} <small>${esc(schoolName(PB[m.ida]))}</small><br>${esc(PB[m.idb].name)} <small>${esc(schoolName(PB[m.idb]))}</small></span></button>`).join("")+`</div>`
+    :`<p class="hint">いま入れる試合はありません（残りの試合のペアがほかの面で試合中です）。</p>`;
+  $("bsBody").querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{putOnCourt(li,b.dataset.pk,lab);closeSheet();renderAll(false);toast(`${lab}に入れました`)});
+}
 function openSheet(key){sheetKey=key;refreshSheet();$("bsBg").hidden=false;document.body.style.overflow="hidden"}
-function closeSheet(){sheetKey=null;$("bsBg").hidden=true;document.body.style.overflow=""}
+function closeSheet(){sheetKey=null;courtSheet=null;$("bsBg").hidden=true;document.body.style.overflow=""}
 function courtPick(m){
   const st=courtState(prefs.league);if(!st)return "";
   const cur=st.on[skey(m.ida,m.idb)];
-  return `<div class="bs-sec"><div class="bs-lab">${cur?`いま <b>${esc(cur)}</b> で試合中。別の面にするとき：`:"この試合を始めた面（入っていた試合は待ちにもどります）："}</div>
-    <div class="bs-courts">${st.labels.map(l=>`<button type="button" data-oc="${esc(l)}"${l===cur?" disabled":""}>${esc(l)}</button>`).join("")}</div></div>`;
+  const free=l=>!st.at[l];
+  return `<div class="bs-sec"><div class="bs-lab">${cur?`いま <b>${esc(cur)}</b> で試合中。別の面にするとき：`:"この試合を入れる面："}</div>
+    <div class="bs-courts">${st.labels.map(l=>`<button type="button" data-oc="${esc(l)}"${l===cur?" disabled":""}>${esc(l)}${l!==cur&&!free(l)?"<small>入れかえ</small>":""}</button>`).join("")}
+    ${cur?`<button type="button" data-oc="">面から外す</button>`:""}</div></div>`;
 }
 function refreshSheet(){
   if(!sheetKey||!S||noLeagues())return closeSheet();
@@ -1189,7 +1219,7 @@ function refreshSheet(){
     <div class="bs-sec"><div class="bs-lab">○ <b>${esc(A.name)}</b> の勝ち</div><div class="bs-grid" style="grid-template-columns:repeat(${k},1fr)">${ks.map(x=>btn(k,x)).join("")}</div></div>
     <div class="bs-sec"><div class="bs-lab">○ <b>${esc(B.name)}</b> の勝ち</div><div class="bs-grid" style="grid-template-columns:repeat(${k},1fr)">${[...ks].reverse().map(x=>btn(x,k)).join("")}</div></div>
     ${s?`<button type="button" class="bs-clear danger" data-set="">結果を消す</button>`:courtPick(m)}`;
-  $("bsBody").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>{putOnCourt(prefs.league,sheetKey,b.dataset.oc);closeSheet();renderAll(false);toast(`第${m.no}試合を${b.dataset.oc}に入れました`)});
+  $("bsBody").querySelectorAll("[data-oc]").forEach(b=>b.onclick=()=>{putOnCourt(prefs.league,sheetKey,b.dataset.oc);closeSheet();renderAll(false);toast(b.dataset.oc?`第${m.no}試合を${b.dataset.oc}に入れました`:`第${m.no}試合を面から外しました`)});
   $("bsBody").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{
     setScore(m.ida,m.idb,b.dataset.set?b.dataset.set.split(",").map(Number):null);
     closeSheet();renderAll(false);toast(b.dataset.set?`第${m.no}試合 ${b.dataset.set.replace(",","-")} を入れました`:"消しました");
